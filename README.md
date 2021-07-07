@@ -7,4 +7,4 @@ This is by no means the cleanest or most efficient minesweeper implementation, t
 Thanks to Emmett M. for extracting the game sprites.
 
 ## Play Online
-Play it [here](https://nethe550.github.io/minesweeper "here").
+Play it [here](https://nethe550-minesweeper.github.io/ "here").
