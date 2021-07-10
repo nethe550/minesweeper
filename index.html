@@ -12,15 +12,26 @@
         <div class="pad">
             <h1>Minesweeper</h1>
         </div>
-        <div id="minesweeper">
-            <div id="field"></div>
-            <div id="controls">
-                <span id="copy">Microsoft&copy; Minesweeper is a trademark of Microsoft Corporation.</span>
-                <span class="display" id="bombs-left">
-                    <div id="sign" class="number"></div><div id="h" class="number"></div><div id="t" class="number"></div><div id="o" class="number"></div>
+        <div class="minesweeper">
+            <div class="0 field"></div>
+            <div class="controls">
+                <span class="copy">Microsoft&copy; Minesweeper is a trademark of Microsoft Corporation.</span>
+                <span class="display bombs-left">
+                    <div id="sign" class="0 number"></div><div id="h" class="0 number"></div><div id="t" class="0 number"></div><div id="o" class="0 number"></div>
                 </span>
             </div>
         </div>
+        <!-- Support for multiple instances -->
+        <!-- <div class="minesweeper">
+            <div class="1 field"></div>
+            <div class="controls">
+                <span class="copy">Microsoft&copy; Minesweeper is a trademark of Microsoft Corporation.</span>
+                <span class="display bombs-left">
+                    <div id="sign" class="1 number"></div><div id="h" class="1 number"></div><div id="t" class="1 number"></div><div id="o" class="1 number"></div>
+                </span>
+            </div>
+        </div> -->
+
         <script src="minesweeper.js"></script>
     </body>
 </html>

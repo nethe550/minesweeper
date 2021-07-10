@@ -4,7 +4,17 @@
 // under GPL-3.0 license //
 // ===================== //
 
-const board_wrapper = document.getElementById("field");
+
+// handles multiple minesweeper instances
+let dom_board_wrappers = document.getElementsByClassName("field");
+let dom_displays = {};
+
+let board_wrappers = {};
+for (let i = 0; i < dom_board_wrappers.length; i++) {
+    board_wrappers[i] = {};
+    board_wrappers[i]['obj'] = dom_board_wrappers[i];
+    board_wrappers[i]['display'] = document.getElementsByClassName(i.toString());
+}
 
 class Utils {
     static getRandomIntBetweenRange(min, max) {
@@ -82,19 +92,21 @@ class Utils {
         }
     }
 
-    static updateSprite(obj, sprite_offset) {
+    static updateSprite(obj, sprite_name) {
         obj.style.background = 'url("spritemap.gif")';
-        obj.style.backgroundPosition = Utils.getBackgroundOffset(sprite_offset);
+        obj.style.backgroundPosition = Utils.getBackgroundOffset(sprite_name);
     }
 
-    static getBoardDimensions() {
-        return [Board.width, Board.height];
+    static getBoardDimensions(board_instance) {
+        return [
+            board_instance['game_instance']['board']['x'], 
+            board_instance['game_instance']['board']['y']
+        ];
     }
 
     static getTileFromIndex(i, board_obj, return_coords=false) {
-        let d = this.getBoardDimensions();
-        let row = i / d[0];
-        let column = i % d[0];
+        let row = i / board_obj.width;
+        let column = i % board_obj.width;
         let tile = board_obj.getTile(Math.trunc(row), Math.trunc(column));
         if (return_coords) {
             return [Math.trunc(row), Math.trunc(column)];
@@ -102,34 +114,34 @@ class Utils {
         return tile;
     }
 
-    static floodFill(board_obj, x, y, adjacent_limit=8) {
+    static floodFill(board_obj, x, y) {
         let tile = board_obj.getTile(x, y, true);
         if (tile != null && !tile.open && !tile.is_bomb) {
-            if (tile.neighbouring_bombs == 0 && adjacent_limit >= 0) {
+            if (tile.neighbouring_bombs == 0) {
                 Utils.updateSprite(tile.dom_obj, 'open0');
             }
-            if (tile.neighbouring_bombs == 1 && adjacent_limit >= 1) {
+            if (tile.neighbouring_bombs == 1) {
                 Utils.updateSprite(tile.dom_obj, 'open1');
             }
-            if (tile.neighbouring_bombs == 2 && adjacent_limit >= 2) {
+            if (tile.neighbouring_bombs == 2) {
                 Utils.updateSprite(tile.dom_obj, 'open2');
             }
-            if (tile.neighbouring_bombs == 3 && adjacent_limit >= 3) {
+            if (tile.neighbouring_bombs == 3) {
                 Utils.updateSprite(tile.dom_obj, 'open3');
             }
-            if (tile.neighbouring_bombs == 4 && adjacent_limit >= 4) {
+            if (tile.neighbouring_bombs == 4) {
                 Utils.updateSprite(tile.dom_obj, 'open4');
             }
-            if (tile.neighbouring_bombs == 5 && adjacent_limit >= 5) {
+            if (tile.neighbouring_bombs == 5) {
                 Utils.updateSprite(tile.dom_obj, 'open5');
             }
-            if (tile.neighbouring_bombs == 6 && adjacent_limit >= 6) {
+            if (tile.neighbouring_bombs == 6) {
                 Utils.updateSprite(tile.dom_obj, 'open6');
             }
-            if (tile.neighbouring_bombs == 7 && adjacent_limit >= 7) {
+            if (tile.neighbouring_bombs == 7) {
                 Utils.updateSprite(tile.dom_obj, 'open7');
             }
-            if (tile.neighbouring_bombs == 8 && adjacent_limit >= 8) {
+            if (tile.neighbouring_bombs == 8) {
                 Utils.updateSprite(tile.dom_obj, 'open8');
             }
             if (tile.neighbouring_bombs > 8) {
@@ -150,9 +162,112 @@ class Utils {
             }
         }
     }
+
+    static startupGame = (board_instance, debug=false) => {
+        let game = null;
+        game = new Game(board_instance, debug);
+        game.init();
+        return game;
+    }
+
+    static updateSpriteFromNeighbouringBombs(tile) {
+        switch (tile.neighbouring_bombs) {
+            case 0:
+                Utils.updateSprite(tile.dom_obj, 'open0');
+                break;
+            case 1:
+                Utils.updateSprite(tile.dom_obj, 'open1');
+                break;
+            case 2:
+                Utils.updateSprite(tile.dom_obj, 'open2');
+                break;
+            case 3:
+                Utils.updateSprite(tile.dom_obj, 'open3');
+                break;
+            case 4:
+                Utils.updateSprite(tile.dom_obj, 'open4');
+                break;
+            case 5:
+                Utils.updateSprite(tile.dom_obj, 'open5');
+                break;
+            case 6:
+                Utils.updateSprite(tile.dom_obj, 'open6');
+                break;
+            case 7:
+                Utils.updateSprite(tile.dom_obj, 'open7');
+                break;
+            case 8:
+                Utils.updateSprite(tile.dom_obj, 'open8');
+                break;
+            default:
+                alert(`Unexpected Error: Too many bombs surrounding tile (tile ${tile.index}).`)
+                throw new Exception(`Too many neighboring bombs! (tile ${tile.index}) (Utils.updateSpriteFromNeighbouringBombs)`);
+        }
+    }
+
+    static mapFlagCountDisplay(bombs_left) {
+        let _sign, _h, _t, _o = '0';
+
+        let remaining = bombs_left.toString().split('');
+        if (remaining.length == 2 && bombs_left > 0) {
+            remaining.unshift('0');
+        }
+        if (remaining.length == 1 && bombs_left >= 0) {
+            remaining.unshift('0', '0');
+        }
+        if (remaining.indexOf('-') != -1) {
+            _sign = '-';
+        }
+        else {
+            _sign = '0';
+        }
+        if (remaining.indexOf('-') != -1 && remaining.length == 2) {
+            remaining.push(remaining[remaining.length - 1]);
+            remaining[1] = '0';
+        }
+        if (remaining.indexOf('-') != -1 && remaining.length >= 4) {
+            _h = parseInt(remaining[1]);
+            _t = parseInt(remaining[2]);
+            _o = parseInt(remaining[3]);
+        }
+        else {
+            _h = parseInt(remaining[0]);
+            _t = parseInt(remaining[1]);
+            _o = parseInt(remaining[2]);
+        }
+        return [_sign, _h, _t, _o];
+    }
+
+    static getDisplayObjects(id) {
+        for (let element in board_wrappers[id]['display']) {
+            if (board_wrappers[id]['display'][element].id == "sign") 
+            { sign = board_wrappers[id]['display'][element] }
+
+            if (board_wrappers[id]['display'][element].id == "h")
+            { h = board_wrappers[id]['display'][element] }
+
+            if (board_wrappers[id]['display'][element].id == "t")
+            { t = board_wrappers[id]['display'][element] }
+
+            if (board_wrappers[id]['display'][element].id == "o")
+            { o = board_wrappers[id]['display'][element] }
+        }
+        return [sign, h, t, o];
+    }
+
+    static getIDFromBoardInstance(board_instance) {
+        let id;
+        for (let board_wrapper in board_wrappers) {
+            if (board_instance.className.indexOf(board_wrapper) != -1) {
+                id = board_wrapper;
+            }
+        }
+        return id;
+    }
 }
 
 class Tile {
+    board = null;
     index = -1;
     dom_obj = null;
     is_bomb = false;
@@ -160,7 +275,8 @@ class Tile {
     open = false;
     is_flagged = false;
 
-    constructor(index, is_bomb, neighbouring_bombs, open=false, is_flagged=false) {
+    constructor(board, index, is_bomb, neighbouring_bombs, open=false, is_flagged=false) {
+        this.board = board;
         this.index = index;
         this.createDOMObj();
         this.set(is_bomb, neighbouring_bombs, open, is_flagged);
@@ -191,16 +307,19 @@ class Tile {
         this.dom_obj.style.margin = '0px';
         Utils.updateSprite(this.dom_obj, 'blank');
         this.dom_obj.setAttribute('pos', this.index);
+        this.dom_obj.setAttribute('board', this.board);
     }
 }
 
 class Board {
-    static width = 40;
-    static height = 30;
-    bombs = 175;
+    static width = null;
+    static height = null;
+    bombs = null;
     board = {};
+    board_instance = -1;
 
-    constructor(width=40, height=30, bombs=175) {
+    constructor(board_instance=null, width=40, height=30, bombs=175) {
+        this.board_instance = board_instance;
         this.width = width;
         this.height = height;
         this.bombs = bombs;
@@ -280,9 +399,9 @@ class Board {
         let num_of_bombs = 0;
         let _neighbours = [t_l, t, t_r, l, r, b_l, b, b_r];
 
-        for (let i = 0; i < _neighbours.length; i++) {
-            if (_neighbours[i] == null) continue;
-            if (_neighbours[i].is_bomb) {
+        for (let neighbour of _neighbours) {
+            if ( neighbour == null) continue;
+            if (neighbour.is_bomb) {
                 ++num_of_bombs;
             }
         }
@@ -298,7 +417,9 @@ class Board {
         for (let x = 0; x < this.height; x++) {
             this.board[x] = {};
             for (let y = 0; y < this.width; y++) { 
+                let board_id = Utils.getIDFromBoardInstance(this.board_instance);
                 this.board[x][y] = new Tile(
+                    board_id,
                     tileIndex,
                     null,
                     0,
@@ -335,45 +456,18 @@ class Board {
     }
 
     drawBoard = (debug=false) => {
+        if (this.board_instance == null) {
+            console.log("Null board instance. (drawBoard): ", this.board_instance);
+        }
         for (let x = 0; x < this.height; x++) {
             for (let y = 0; y < this.width; y++) {
-                board_wrapper.appendChild(this.board[x][y].dom_obj);
+                this.board_instance.appendChild(this.board[x][y].dom_obj);
                 if (debug) {
                     if (this.board[x][y].is_bomb) {
                         Utils.updateSprite(this.board[x][y].dom_obj, 'bombdied');
                     } else {
-                        switch (this.board[x][y].neighbouring_bombs) {
-                            case 0:
-                                Utils.updateSprite(this.board[x][y].dom_obj, 'open0');
-                                break;
-                            case 1:
-                                Utils.updateSprite(this.board[x][y].dom_obj, 'open1');
-                                break;
-                            case 2:
-                                Utils.updateSprite(this.board[x][y].dom_obj, 'open2');
-                                break;
-                            case 3:
-                                Utils.updateSprite(this.board[x][y].dom_obj, 'open3');
-                                break;
-                            case 4:
-                                Utils.updateSprite(this.board[x][y].dom_obj, 'open4');
-                                break;
-                            case 5:
-                                Utils.updateSprite(this.board[x][y].dom_obj, 'open5');
-                                break;
-                            case 6:
-                                Utils.updateSprite(this.board[x][y].dom_obj, 'open6');
-                                break;
-                            case 7:
-                                Utils.updateSprite(this.board[x][y].dom_obj, 'open7');
-                                break;
-                            case 8:
-                                Utils.updateSprite(this.board[x][y].dom_obj, 'open8');
-                                break;
-                            default:
-                                alert(`Unexpected Error: Too many bombs surrounding tile (${x}, ${y}).`)
-                                throw new Exception(`Too many neighboring bombs! (${x}, ${y}) (drawBoard)`);
-                        }
+                        let tile = this.board.getTile(x, y);
+                        Utils.updateSpriteFromNeighbouringBombs(tile);
                     }
                 }
             }
@@ -384,38 +478,8 @@ class Board {
         for (let x = 0; x < this.height; x++) {
             for (let y = 0; y < this.width; y++) {
                 if (this.board[x][y].open) {
-                    switch (this.board[x][y].neighbouring_bombs) {
-                        case 0:
-                            Utils.updateSprite(this.board[x][y].dom_obj, 'open0');
-                            break;
-                        case 1:
-                            Utils.updateSprite(this.board[x][y].dom_obj, 'open1');
-                            break;
-                        case 2:
-                            Utils.updateSprite(this.board[x][y].dom_obj, 'open2');
-                            break;
-                        case 3:
-                            Utils.updateSprite(this.board[x][y].dom_obj, 'open3');
-                            break;
-                        case 4:
-                            Utils.updateSprite(this.board[x][y].dom_obj, 'open4');
-                            break;
-                        case 5:
-                            Utils.updateSprite(this.board[x][y].dom_obj, 'open5');
-                            break;
-                        case 6:
-                            Utils.updateSprite(this.board[x][y].dom_obj, 'open6');
-                            break;
-                        case 7:
-                            Utils.updateSprite(this.board[x][y].dom_obj, 'open7');
-                            break;
-                        case 8:
-                            Utils.updateSprite(this.board[x][y].dom_obj, 'open8');
-                            break;
-                        default:
-                            alert(`Unexpected Error: Too many bombs surrounding tile (${x}, ${y}).`)
-                            throw new Exception(`Too many neighboring bombs! (${x}, ${y}) (drawBoard)`);
-                    }
+                    let tile = this.board.getTile(x, y);
+                    Utils.updateSpriteFromNeighbouringBombs(tile);
                 }
                 else if (this.board[x][y].is_flagged) {
                     Utils.updateSprite(this.board[x][y].dom_obj, 'flagged');
@@ -428,13 +492,17 @@ class Board {
 class Game {
     board;
     debug = false;
+    board_instance = null;
 
-    constructor(debug=false) {
+    num_of_flags = 0;
+
+    constructor(board_instance=null, debug=false) {
+        this.board_instance = board_instance;
         this.debug = debug;
     }
 
     init = () => {
-        this.board = new Board();
+        this.board = new Board(this.board_instance);
         this.board.createBoard();
         this.board.drawBoard(this.debug);
         this.updateUI(this.board.bombs);
@@ -442,7 +510,7 @@ class Game {
 
     cleanup = () => {
         this.board = {};
-        board_wrapper.innerHTML = '';
+        this.board_instance.innerHTML = '';
     }
 
     gameOver = () => {
@@ -451,146 +519,100 @@ class Game {
         this.cleanup();
         this.init();
     }
+    
+    gameWin = () => {
+        this.cleanup();
+        this.board.drawBoard(true);
+        alert('You Win!');
+        console.log('You Win!');
+        this.cleanup();
+        this.init();
+    }
 
     updateUI = () => {
-        let num_of_flags = 0;
-        for (let x = 0; x < game.board.height; x++) {
-            for (let y = 0; y < game.board.width; y++) {
-                let tile = game.board.getTile(x, y);
+        this.num_of_flags = 0;
+        let num_of_flagged_bombs = 0;
+        for (let x = 0; x < this.board.height; x++) {
+            for (let y = 0; y < this.board.width; y++) {
+                let tile = this.board.getTile(x, y);
                 if (tile.is_flagged) {
-                    num_of_flags++;
+                    this.num_of_flags++;
+                    if (tile.is_bomb) {
+                        num_of_flagged_bombs++;
+                    }
+                }
+                if (this.num_of_flags == num_of_flagged_bombs == this.board.bombs) {
+                    this.gameWin();
                 }
             }
         }
-
-        let sign = document.getElementById('sign');
-        let h = document.getElementById('h');
-        let t = document.getElementById('t');
-        let o = document.getElementById('o');
-
-        let bombs_left = this.board.bombs - num_of_flags;
-
-        let _sign, _h, _t, _o = 0;
-        let remaining = bombs_left.toString().split('');
-        if (remaining.length == 2 && bombs_left > 0) {
-            remaining.unshift('0');
-        }
-        if (remaining.length == 1 && bombs_left >= 0) {
-            remaining.unshift('0', '0');
-        }
         
-        if (remaining.indexOf('-') != -1) {
-            _sign = '-';
-        }
-        else {
-            _sign = '0';
-        }
+        let id = Utils.getIDFromBoardInstance(this.board_instance);
+        let display_objs = Utils.getDisplayObjects(id);
 
-        if (remaining.indexOf('-') != -1 && remaining.length == 2) {
-            remaining.push(remaining[remaining.length - 1]);
-            remaining[1] = '0';
-        }
-        if (remaining.indexOf('-') != -1 && remaining.length >= 4) {
-            _h = parseInt(remaining[1]);
-            _t = parseInt(remaining[2]);
-            _o = parseInt(remaining[3]);
-        }
-        else {
-            _h = parseInt(remaining[0]);
-            _t = parseInt(remaining[1]);
-            _o = parseInt(remaining[2]);
-        }
+        let bombs_left = this.board.bombs - this.num_of_flags;
+        let display_out = Utils.mapFlagCountDisplay(bombs_left);
 
-        
-
-        Utils.updateSprite(sign, _sign);
-        Utils.updateSprite(h, _h.toString());
-        Utils.updateSprite(t, _t.toString());
-        Utils.updateSprite(o, _o.toString());
+        Utils.updateSprite(display_objs[0], display_out[0]);
+        Utils.updateSprite(display_objs[1], display_out[1].toString());
+        Utils.updateSprite(display_objs[2], display_out[2].toString());
+        Utils.updateSprite(display_objs[3], display_out[3].toString());
     }
 }
 
-
 // Driver Code
-let game = new Game();
-game.init();
+for (let board_wrapper in board_wrappers) {
+    let obj = board_wrappers[board_wrapper]['obj'];
+    
+    // start game
+    board_wrappers[board_wrapper]['game_instance'] = Utils.startupGame(obj);
+    
+    // frame update
+    let fps = 1000 / 10; // 10 fps
+    setInterval(() => {
+        board_wrappers[board_wrapper]['game_instance'].updateUI();
+    }, fps);
 
-document.addEventListener('click', (e) => {
-    if (e.target.hasAttribute('pos')) {
-        let tile = Utils.getTileFromIndex(parseInt(e.target.getAttribute('pos')), game.board);
-        if (tile.is_bomb) {
-            Utils.updateSprite(tile.dom_obj, 'bombdied');
-            game.gameOver();
-        }
-        else {
-            let coords = Utils.getTileFromIndex(parseInt(e.target.getAttribute('pos')), game.board, true);
-
-            if (tile.open) return;
-            if (tile.is_flagged) return;
-
-            Utils.floodFill(game.board, coords[0], coords[1]);
-        }
-    }
-});
-
-document.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-
-    if (e.target.hasAttribute('pos')) {
-        let tile = Utils.getTileFromIndex(parseInt(e.target.getAttribute('pos')), game.board);
-        
-        if (!tile.open) {
-            tile.is_flagged = !tile.is_flagged;
-        }
-
-        if (tile.is_flagged) {
-            Utils.updateSprite(tile.dom_obj, 'flagged');
-        }
-        else {
-            if (tile.open) {
-                switch (tile.neighbouring_bombs) {
-                    case 0:
-                        Utils.updateSprite(tile.dom_obj, 'open0');
-                        break;
-                    case 1:
-                        Utils.updateSprite(tile.dom_obj, 'open1');
-                        break;
-                    case 2:
-                        Utils.updateSprite(tile.dom_obj, 'open2');
-                        break;
-                    case 3:
-                        Utils.updateSprite(tile.dom_obj, 'open3');
-                        break;
-                    case 4:
-                        Utils.updateSprite(tile.dom_obj, 'open4');
-                        break;
-                    case 5:
-                        Utils.updateSprite(tile.dom_obj, 'open5');
-                        break;
-                    case 6:
-                        Utils.updateSprite(tile.dom_obj, 'open6');
-                        break;
-                    case 7:
-                        Utils.updateSprite(tile.dom_obj, 'open7');
-                        break;
-                    case 8:
-                        Utils.updateSprite(tile.dom_obj, 'open8');
-                        break;
-                    default:
-                        alert(`Unexpected Error: Too many bombs surrounding tile (${x}, ${y}).`)
-                        throw new Exception(`Too many neighboring bombs! (${x}, ${y}) (onclick)`);
-                }
+    // left click detection
+    board_wrappers[board_wrapper]['obj'].addEventListener('click', (e) => {
+        if (e.target.hasAttribute('pos')) {
+            let tile = Utils.getTileFromIndex(parseInt(e.target.getAttribute('pos')), board_wrappers[board_wrapper]['game_instance'].board);
+            if (tile.is_bomb) {
+                Utils.updateSprite(tile.dom_obj, 'bombdied');
+                board_wrappers[board_wrapper]['game_instance'].gameOver();
             }
             else {
-                Utils.updateSprite(tile.dom_obj, 'blank');
+                let coords = Utils.getTileFromIndex(parseInt(e.target.getAttribute('pos')), board_wrappers[board_wrapper]['game_instance'].board, true);
+    
+                if (tile.open) return;
+                if (tile.is_flagged) return;
+    
+                Utils.floodFill(board_wrappers[board_wrapper]['game_instance'].board, coords[0], coords[1]);
             }
         }
-    }
-    return false;
-});
+    });
+    
+    // right click detection
+    board_wrappers[board_wrapper]['obj'].addEventListener('contextmenu', (e) => {
+        e.preventDefault();
 
-// ui update independent of game
-let fps = 1000 / 10; // 10 fps
-setInterval(() => {
-    game.updateUI();
-}, fps);
+        if (e.target.hasAttribute('pos') && e.target.hasAttribute("board")) {
+            let tile = Utils.getTileFromIndex(parseInt(e.target.getAttribute('pos')), board_wrappers[board_wrapper]['game_instance'].board);
+            if (!tile.open) {
+                tile.is_flagged = !tile.is_flagged;
+            }
+            if (tile.is_flagged) {
+                Utils.updateSprite(tile.dom_obj, 'flagged');
+            }
+            else {
+                if (tile.open) {
+                    updateSpriteFromNeighbouringBombs(tile);
+                }
+                else {
+                    Utils.updateSprite(tile.dom_obj, 'blank');
+                }
+            }
+        }
+        return false;
+    });
+}
